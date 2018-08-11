@@ -126,6 +126,8 @@ optional arguments:
 The file metric_INA219.py has been developed for the Raspberry Pi monitoring.
 
 ![DIsplay via Grafana](images/grafana_display.png )
+
+
  woensdag, 25. juli 2018 12:33 
 
 

@@ -6,8 +6,9 @@ scripts for forwarding energy and energy data
 
 Python scripts collects information about energy and temperature to a Prometheus client, which is forwarded to a prometheus server and Grafana for visualisation and monitoring. The exampe is based on the TPLink HS110 smartplug. This alows for a cost-effective measurement of power usage and temperature monitoring for computers.
 
-<img src="images/HS110.jpg" alt="drawing" style="width:200px"></>
-
+<img src="images/HS110.jpg" alt) ="drawing" style="width:200px"></>
+The script is based on trying a similar monitoring application based on an INA219 monitoring interface in combination with a Raspberry Pi.
+<img src="images/INA219.jpg" alt="drawing" style="width:200px"></
 
 
 ## 2. Installation
@@ -119,7 +120,7 @@ optional arguments:
 </pre>
 
  In Grafana the datasources should include prometheus data. 
-    
+The file metric_INA219.py has been developed for the Raspberry Pi monitoring.
 
 ![DIsplay via Grafana](images/grafana_display.png )
  woensdag, 25. juli 2018 12:33 

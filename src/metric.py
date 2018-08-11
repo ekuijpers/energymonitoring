@@ -18,9 +18,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# extended for prototyping purposes by Ed Kuijpers with support from French 
+# extended for prototyping purposes by Ed Kuijpers with support from French
 # students during a summerschool
-
 
 from __future__ import division
 from prometheus_client import start_http_server, Summary, Gauge
@@ -38,108 +37,133 @@ from struct import pack
 
 version = 0.2
 
+
 # Check if hostname is valid
 def validHostname(hostname):
-        try:
-                socket.gethostbyname(hostname)
-        except socket.error:
-                parser.error("Invalid hostname.")
-        return hostname
+    try:
+        socket.gethostbyname(hostname)
+    except socket.error:
+        parser.error("Invalid hostname.")
+    return hostname
+
 
 # Predefined Smart Plug Commands
 # For a full list of commands, consult tplink_commands.txt
-commands = {'info'     : '{"system":{"get_sysinfo":{}}}',
-                        'on'       : '{"system":{"set_relay_state":{"state":1}}}',
-                        'off'      : '{"system":{"set_relay_state":{"state":0}}}',
-                        'cloudinfo': '{"cnCloud":{"get_info":{}}}',
-                        'wlanscan' : '{"netif":{"get_scaninfo":{"refresh":0}}}',
-                        'time'     : '{"time":{"get_time":{}}}',
-                        'schedule' : '{"schedule":{"get_rules":{}}}',
-                        'countdown': '{"count_down":{"get_rules":{}}}',
-                        'antitheft': '{"anti_theft":{"get_rules":{}}}',
-                        'reboot'   : '{"system":{"reboot":{"delay":1}}}',
-                        'reset'    : '{"system":{"reset":{"delay":1}}}',
-                        'energy'   : '{"emeter":{"get_realtime":{}}}'
+commands = {
+    'info': '{"system":{"get_sysinfo":{}}}',
+    'on': '{"system":{"set_relay_state":{"state":1}}}',
+    'off': '{"system":{"set_relay_state":{"state":0}}}',
+    'cloudinfo': '{"cnCloud":{"get_info":{}}}',
+    'wlanscan': '{"netif":{"get_scaninfo":{"refresh":0}}}',
+    'time': '{"time":{"get_time":{}}}',
+    'schedule': '{"schedule":{"get_rules":{}}}',
+    'countdown': '{"count_down":{"get_rules":{}}}',
+    'antitheft': '{"anti_theft":{"get_rules":{}}}',
+    'reboot': '{"system":{"reboot":{"delay":1}}}',
+    'reset': '{"system":{"reset":{"delay":1}}}',
+    'energy': '{"emeter":{"get_realtime":{}}}'
 }
+
 
 # Encryption and Decryption of TP-Link Smart Home Protocol
 # XOR Autokey Cipher with starting key = 171
 def encrypt(string):
-        key = 171
-        result = pack('>I', len(string))
-        for i in string:
-                a = key ^ ord(i)
-                key = a
-                result += chr(a)
-        return result
+    key = 171
+    result = pack('>I', len(string))
+    for i in string:
+        a = key ^ ord(i)
+        key = a
+        result += chr(a)
+    return result
+
 
 def decrypt(string):
-        key = 171
-        result = ""
-        for i in string:
-                a = key ^ ord(i)
-                key = ord(i)
-                result += chr(a)
-        return result
+    key = 171
+    result = ""
+    for i in string:
+        a = key ^ ord(i)
+        key = ord(i)
+        result += chr(a)
+    return result
+
 
 # Parse commandline arguments
-parser = argparse.ArgumentParser(description="TP-Link Wi-Fi Smart Plug Client v" + str(version))
-parser.add_argument("-t", "--target", metavar="<hostname>", required=True, help="Target hostname or IP address", type=validHostname)
+parser = argparse.ArgumentParser(
+    description="TP-Link Wi-Fi Smart Plug Client v" + str(version))
+parser.add_argument(
+    "-t",
+    "--target",
+    metavar="<hostname>",
+    required=True,
+    help="Target hostname or IP address",
+    type=validHostname)
 group = parser.add_mutually_exclusive_group(required=False)
-group.add_argument("-c", "--command", metavar="<command>", help="Preset command to send. Choices are: "+", ".join(commands), choices=commands)
-group.add_argument("-j", "--json", metavar="<JSON string>", help="Full JSON string of command to send")
+group.add_argument(
+    "-c",
+    "--command",
+    metavar="<command>",
+    help="Preset command to send. Choices are: " + ", ".join(commands),
+    choices=commands)
+group.add_argument(
+    "-j",
+    "--json",
+    metavar="<JSON string>",
+    help="Full JSON string of command to send")
 args = parser.parse_args()
-
 
 # Set target IP, port and command to send
 ip = args.target
 port = 9999
 if args.command is None:
-        cmd = args.json
-        cmd = commands['energy']
+    cmd = args.json
+    cmd = commands['energy']
 else:
-        cmd = commands[args.command]
+    cmd = commands[args.command]
 
 
 def get_energy(cmd):
-# Send command and receive reply
-	energy = 0.0
-	try:
-	        sock_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	        sock_tcp.connect((ip, port))
-	        sock_tcp.send(encrypt(cmd))
-	        data = sock_tcp.recv(2048)
-	        sock_tcp.close()
+    # Send command and receive reply
+    energy = 0.0
+    try:
+        sock_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock_tcp.connect((ip, port))
+        sock_tcp.send(encrypt(cmd))
+        data = sock_tcp.recv(2048)
+        sock_tcp.close()
 
-#	        print "Sent:     ", cmd
-#	        print "Received: ", decrypt(data[4:])
-	        decode = decrypt(data[4:])
-	        ddecode = json.loads(decode)
-	        energy = 0.001 * float(ddecode['emeter']['get_realtime']['power_mw'])
-	        print "energy = %f" % energy
-	except socket.error:
-	        quit("Cound not connect to host " + ip + ":" + str(port))
-	return(energy)
+        #	        print "Sent:     ", cmd
+        #	        print "Received: ", decrypt(data[4:])
+        decode = decrypt(data[4:])
+        ddecode = json.loads(decode)
+        energy = 0.001 * float(ddecode['emeter']['get_realtime']['power_mw'])
+        print "energy = %f" % energy
+    except socket.error:
+        quit("Cound not connect to host " + ip + ":" + str(port))
+    return (energy)
 
-REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request')
-g4= Gauge('HS110_Energy', 'Description of gauge')
+
+REQUEST_TIME = Summary('request_processing_seconds',
+                       'Time spent processing request')
+g4 = Gauge('HS110_Energy', 'Description of gauge')
+
 
 def get_cpu_temperature():
     process = Popen(['./sensor_par.py', 'Physical id 0'], stdout=PIPE)
     output, _error = process.communicate()
-    print 'temp = %s' % (output[output.index('=') + 1:-1+output.rindex("")])
-    return float(output[output.index('=') + 1:-1+output.rindex("")])
+    print 'temp = %s' % (output[output.index('=') + 1:-1 + output.rindex("")])
+    return float(output[output.index('=') + 1:-1 + output.rindex("")])
 
 
 g3 = Gauge('Temperature', 'Description of gauge')
 g3.set(get_cpu_temperature())
 
+
 # Decorate function with metric.
 @REQUEST_TIME.time()
-
 def process_request(t):
     """A dummy function that takes some time."""
     time.sleep(t)
+
 
 if __name__ == '__main__':
     # Start up the server to expose the metrics.
